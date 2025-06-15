@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>زنجیره کلمات ۴ حرفی فارسی</title>
+  <style>
+    body { font-family: Tahoma; direction: rtl; padding: 10px; background: #fafafa; }
+    .container { display: flex; gap: 8px; overflow-x: auto; padding-bottom:20px; }
+    .column { border:1px solid #aaa; padding:6px; border-radius:6px; min-width:120px; position:relative; background:#fff; }
+    .column h3,h4 { margin:4px 0; font-size:0.9em; }
+    ul { list-style:none; padding:0; max-height:120px; overflow-y:auto; }
+    li { cursor:pointer; margin:2px 0; padding:2px 6px; border-radius:4px; font-size:0.9em; }
+    li:hover { background:#e0f7fa; }
+    .hide-list { display:none; }
+    .btn { font-size:0.8em; padding:2px 4px; cursor:pointer; }
+    .remove-btn { position:absolute; top:4px; left:4px; }
+  </style>
+</head>
+<body>
+  <h2>زنجیره‌سازی کلمات چهارحرفی فارسی (بانک واقعی)</h2>
+  <button onclick="startGame()">🟢 شروع مجدد</button>
+  <div class="container" id="chain"></div>
+
+<script>
+let wordBank = [];
+
+fetch('https://raw.githubusercontent.com/samanvp/persian-lexicon/main/data/4-letter-words.txt')
+  .then(r => r.text())
+  .then(txt => {
+    wordBank = txt.split(/\r?\n/).filter(w => /^[\u0600-\u06FF]{4}$/.test(w));
+    startGame();
+  })
+  .catch(() => alert("خطا در بارگذاری بانک کلمات (به اینترنت وصل هستی؟)"));
+
+function addColumn(chars) {
+  const [c1,c2] = chars;
+  const col = document.createElement('div');
+  col.className = 'column';
+  col.innerHTML = `
+    <button class="btn remove-btn" onclick="removeCol(this)">×</button>
+    <h3>حروف: ${c1}–${c2}</h3>
+    <button class="btn" onclick="toggleList(this)">نمایش/پنهان</button>
+    <ul></ul><div class="next"></div>`;
+  const ul = col.querySelector('ul');
+  const matches = wordBank.filter(w => w.includes(c1) && w.includes(c2));
+  if (!matches.length) ul.innerHTML = '<li><i>موردی یافت نشد</i></li>';
+  else matches.forEach(w => {
+    const li = document.createElement('li');
+    li.textContent = w;
+    li.onclick = () => chooseWord(w, col, c1, c2);
+    ul.appendChild(li);
+  });
+  document.getElementById('chain').appendChild(col);
+}
+
+function chooseWord(word, col, c1, c2) {
+  col.querySelectorAll('li').forEach(li => li.style.display = 'none');
+  const leftover = [...word].filter(ch => ![c1,c2].includes(ch));
+  col.querySelector('.next').innerHTML = `
+    <h4>انتخاب: ${word}</h4>
+    <h4>باقی: ${leftover.join(', ')}</h4>`;
+  if (leftover.length === 2) addColumn(leftover);
+}
+
+function toggleList(btn) {
+  btn.nextElementSibling.nextElementSibling.classList.toggle('hide-list');
+}
+
+function removeCol(btn) {
+  btn.parentNode.remove();
+}
+
+function startGame() {
+  document.getElementById('chain').innerHTML = '';
+  const start = prompt('دو حرف شروع (فارسی، فقط ۲ حرف):');
+  if (start && start.length === 2) addColumn(start);
+  else alert('لطفاً دقیقاً دو حرف فارسی وارد کن.');
+}
+</script>
+</body>
+</html>
